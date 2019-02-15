@@ -1,0 +1,5 @@
+set -xv
+docker build -t agarioclone_agar .
+docker rm -f agario
+docker run -d -p 3000:3000 --name agario agarioclone_agar
+docker logs -f agario

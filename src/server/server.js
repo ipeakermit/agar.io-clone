@@ -282,11 +282,18 @@ io.on('connection', function (socket) {
             socket.disconnect();
         } else {
             console.log('[INFO] Player ' + player.name + ' connected!');
+            console.log('type',type);
             sockets[player.id] = socket;
 
             var radius = util.massToRadius(c.defaultPlayerMass);
             var position = c.newPlayerInitialPosition == 'farthest' ? util.uniformPosition(users, radius) : util.randomPosition(radius);
 
+            if (type !== 'player') {
+                console.log('non-player',JSON.stringify(player));
+		// preserve requested position
+                player.sx = player.x;
+                player.sy = player.y;
+            }
             player.x = position.x;
             player.y = position.y;
             player.target.x = 0;
@@ -301,8 +308,8 @@ io.on('connection', function (socket) {
                 player.massTotal = c.defaultPlayerMass;
             }
             else {
-                 player.cells = [];
-                 player.massTotal = 0;
+                player.cells = [];
+                player.massTotal = 0;
             }
             player.hue = Math.round(Math.random() * 360);
             currentPlayer = player;
@@ -327,6 +334,7 @@ io.on('connection', function (socket) {
     socket.on('windowResized', function (data) {
         currentPlayer.screenWidth = data.screenWidth;
         currentPlayer.screenHeight = data.screenHeight;
+        console.log('[INFO] User ' + currentPlayer.name + ' resize', currentPlayer.screenWidth, currentPlayer.screenHeight);
     });
 
     socket.on('respawn', function () {
@@ -412,6 +420,11 @@ io.on('connection', function (socket) {
         if (target.x !== currentPlayer.x || target.y !== currentPlayer.y) {
             currentPlayer.target = target;
         }
+        if (currentPlayer.type === 'spectate') {
+            //console.log("spectator heartbeat",currentPlayer.name);
+	    currentPlayer.sx = target.x;
+	    currentPlayer.sy = target.y;
+        }
     });
 
     socket.on('1', function() {
@@ -495,6 +508,11 @@ function tickPlayer(currentPlayer) {
     }
 
     function eatMass(m) {
+	//console.log("Eatmass",m.name,m.speed,"x",m.x,"y",m.y,playerCircle,"mass",currentCell.mass,"m.masa",m.masa);
+	eatMass_src(m);
+    }
+
+    function eatMass_src(m) {
         if(SAT.pointInCircle(new V(m.x, m.y), playerCircle)){
             if(m.id == currentPlayer.id && m.speed > 0 && z == m.num)
                 return false;
@@ -657,7 +675,10 @@ function sendUpdates() {
         // center the view if x/y is undefined, this will happen for spectators
         u.x = u.x || c.gameWidth / 2;
         u.y = u.y || c.gameHeight / 2;
-
+        if (u.sx) {
+          u.x = u.sx;
+          u.y = u.sy;
+        }
         var visibleFood  = food
             .map(function(f) {
                 if ( f.x > u.x - u.screenWidth/2 - 20 &&
@@ -724,6 +745,7 @@ function sendUpdates() {
                 }
             })
             .filter(function(f) { return f; });
+        //console.log("user",u.name,u.id,"xywh",u.x,u.y,u.screenWidth,u.screenHeight,"sees","c",visibleCells.length,"f",visibleFood.length);
 
         sockets[u.id].emit('serverTellPlayerMove', visibleCells, visibleFood, visibleMass, visibleVirus);
         if (leaderboardChanged) {

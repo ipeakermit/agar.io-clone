@@ -1,4 +1,4 @@
-var io = require('socket.io-client');
+ io = require('socket.io-client');
 var ChatClient = require('./chat-client');
 var Canvas = require('./canvas');
 var global = require('./global');
@@ -18,16 +18,20 @@ if ( /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent) ) {
 }
 
 function startGame(type) {
+    debug("startGame...");
     global.playerName = playerNameInput.value.replace(/(<([^>]+)>)/ig, '').substring(0,25);
     global.playerType = type;
 
+    console.log("global.WH",global.screenWidth,global.screenHeight);
+    console.log("inner.WH",window.innerWidth,window.innerHeight);
     global.screenWidth = window.innerWidth;
     global.screenHeight = window.innerHeight;
 
     document.getElementById('startMenuWrapper').style.maxHeight = '0px';
     document.getElementById('gameAreaWrapper').style.opacity = 1;
     if (!socket) {
-        socket = io({query:"type=" + type});
+        console.log("Socket...");
+        socket = io('h6.vx.rmit.edu.au:3000',{query:"type=" + type});
         setupSocket(socket);
     }
     if (!global.animLoopHandle)
@@ -185,6 +189,7 @@ function setupSocket(socket) {
         socket.emit('gotit', player);
         global.gameStart = true;
         debug('Game started at: ' + global.gameStart);
+        debug('HereVX');
         window.chat.addSystemLine('Connected to the game!');
         window.chat.addSystemLine('Type <b>-help</b> for a list of commands.');
         if (global.mobile) {
@@ -194,6 +199,7 @@ function setupSocket(socket) {
     });
 
     socket.on('gameSetup', function(data) {
+        console.log("gameSetup",data);
         global.gameWidth = data.gameWidth;
         global.gameHeight = data.gameHeight;
         resize();
@@ -243,6 +249,7 @@ function setupSocket(socket) {
 
     // Handle movement.
     socket.on('serverTellPlayerMove', function (userData, foodsList, massList, virusList) {
+        console.log('serverTellPlayerMove:',userData);
         var playerData;
         for(var i =0; i< userData.length; i++) {
             if(typeof(userData[i].id) == "undefined") {
@@ -266,6 +273,7 @@ function setupSocket(socket) {
         foods = foodsList;
         viruses = virusList;
         fireFood = massList;
+        console.log("xy",player.x,player.y);
     });
 
     // Death.
@@ -347,9 +355,12 @@ function drawPlayers(order) {
         x: player.x - (global.screenWidth / 2),
         y: player.y - (global.screenHeight / 2)
     };
+    console.log("drawPlayers l",order.length);
+    console.log("drawPlayers",start);
 
     for(var z=0; z<order.length; z++)
     {
+        console.log("drawPlayers #",z);
         var userCurrent = users[order[z].nCell];
         var cellCurrent = users[order[z].nCell].cells[order[z].nDiv];
 
@@ -569,6 +580,7 @@ function gameLoop() {
             });
 
             drawPlayers(orderMass);
+	    console.log("heartbeat",window.canvas.target);
             socket.emit('0', window.canvas.target); // playerSendTarget "Heartbeat".
 
         } else {
@@ -609,11 +621,13 @@ function resize() {
 
     player.screenWidth = c.width = global.screenWidth = global.playerType == 'player' ? window.innerWidth : global.gameWidth;
     player.screenHeight = c.height = global.screenHeight = global.playerType == 'player' ? window.innerHeight : global.gameHeight;
+    console.log("resize player.WH",player.screenWidth,player.screenHeight);
 
     if (global.playerType == 'spectate') {
         player.x = global.gameWidth / 2;
         player.y = global.gameHeight / 2;
     }
 
+    console.log("windowResized",global.screenWidth,global.screenHeight);
     socket.emit('windowResized', { screenWidth: global.screenWidth, screenHeight: global.screenHeight });
 }
