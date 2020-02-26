@@ -1,0 +1,34 @@
+#!/bin/bash
+
+export PATH=/usr/local/bin:/home/vxlab/bin:/home/vxlab/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:$PATH
+
+# set SCRIPTS to the directory containing this script
+SOURCE="${BASH_SOURCE[0]}"
+# While $SOURCE is a symlink, resolve it
+while [ -h "$SOURCE" ]; do
+     DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+     SOURCE="$( readlink "$SOURCE" )"
+     # If $SOURCE was a relative symlink (so no "/" as prefix, need to resolve it relative to the symlink base directory
+     [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPTS="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+CNAME=`cat $SCRIPTS/docker-cname`
+
+function finish {
+  docker stop $CNAME
+  docker rm -f $CNAME
+}
+trap finish EXIT
+
+docker stop $CNAME
+docker rm -f $CNAME
+
+LOG=$SCRIPTS/docker-starter.log
+rm -f $LOG
+
+cd $SCRIPTS
+set -xv
+docker build -t agarioclone_agar .
+docker rm -f $CNAME
+docker run -i -p 3000:3000 --name $CNAME agarioclone_agar |& tee -a $LOG

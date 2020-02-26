@@ -31,7 +31,8 @@ function startGame(type) {
     document.getElementById('gameAreaWrapper').style.opacity = 1;
     if (!socket) {
         console.log("Socket...");
-        socket = io('h6.vx.rmit.edu.au:3000',{query:"type=" + type});
+        //socket = io('h6.vx.rmit.edu.au:3000',{query:"type=" + type});
+        socket = io('h7.vx.rmit.edu.au:3000',{query:"type=" + type});
         setupSocket(socket);
     }
     if (!global.animLoopHandle)
