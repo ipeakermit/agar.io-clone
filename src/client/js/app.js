@@ -32,6 +32,20 @@ function startGame(type) {
     if (!socket) {
         console.log("Socket...");
         //socket = io('h6.vx.rmit.edu.au:3000',{query:"type=" + type});
+        let loc = window.location,
+		new_uri;
+        if (loc.protocol === "https:") {
+            new_uri = "wss:";
+        } else {
+            new_uri = "ws:";
+        }
+        new_uri += "//" + loc.host;
+        new_uri += loc.pathname;
+        console.log("New URI:",new_uri);
+
+        //ws = new WebSocket("wss://h7.vx.rmit.edu.au:9001");
+        ws = new WebSocket(new_uri);
+
         socket = io('h7.vx.rmit.edu.au:3000',{query:"type=" + type});
         setupSocket(socket);
     }
